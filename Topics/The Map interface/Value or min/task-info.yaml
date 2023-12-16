@@ -1,0 +1,36 @@
+type: code
+files:
+  - name: src/Main.java
+    visible: true
+    text: |-
+      import java.util.*;
+      
+      class Main {
+          private static int getOrMin(Map<String, Integer> map, String key) {
+              // implement me
+          }
+      
+          // do not change the code below
+          public static void main(String[] args) {
+              Scanner scanner = new Scanner(System.in);
+      
+              Map<String, Integer> m = new HashMap<>();
+              int size = scanner.nextInt();
+              for (int i = 0; i < size; ++i) {
+                  String key = scanner.next();
+                  int value = scanner.nextInt();
+                  m.put(key, value);
+              }
+              String key = scanner.next();
+              int result = getOrMin(Map.copyOf(m), key);
+              System.out.println(result);
+          }
+      }
+    learner_created: false
+feedback_link: https://hyperskill.org/learn/step/36544#comment
+status: Solved
+feedback:
+  message: <html>Correct solution</html>
+  time: "Fri, 15 Dec 2023 07:06:49 UTC"
+record: -1
+submission_language: java17

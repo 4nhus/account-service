@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="GradleMigrationSettings" migrationVersion="1" />
+  <component name="GradleSettings">
+    <option name="linkedExternalProjectsSettings">
+      <GradleProjectSettings>
+        <option name="delegatedBuild" value="false" />
+        <option name="distributionType" value="WRAPPED" />
+        <option name="externalProjectPath" value="$PROJECT_DIR$" />
+        <option name="modules">
+          <set>
+            <option value="$PROJECT_DIR$" />
+            <option value="$PROJECT_DIR$/Account Service (Java)/task" />
+            <option value="$PROJECT_DIR$/Topics/Break and continue. Branching/Divisible by 4" />
+            <option value="$PROJECT_DIR$/Topics/Break and continue. Branching/Even or odd" />
+            <option value="$PROJECT_DIR$/Topics/Break and continue. Branching/The same results" />
+            <option value="$PROJECT_DIR$/Topics/Break and continue. Branching/Theory" />
+            <option value="$PROJECT_DIR$/Topics/Conditional statement/Determine the output" />
+            <option value="$PROJECT_DIR$/Topics/Conditional statement/Statements" />
+            <option value="$PROJECT_DIR$/Topics/Conditional statement/Symmetrical number" />
+            <option value="$PROJECT_DIR$/Topics/Conditional statement/Theory" />
+            <option value="$PROJECT_DIR$/Topics/Declaring methods/Method signature" />
+            <option value="$PROJECT_DIR$/Topics/Declaring methods/Sum of numbers in the range" />
+            <option value="$PROJECT_DIR$/Topics/Declaring methods/The sign of a number" />
+            <option value="$PROJECT_DIR$/Topics/Declaring methods/Theory" />
+            <option value="$PROJECT_DIR$/Topics/Integer types and operations/Calculate the digit" />
+            <option value="$PROJECT_DIR$/Topics/Integer types and operations/Difference of times" />
+            <option value="$PROJECT_DIR$/Topics/Integer types and operations/Integer operations" />
+            <option value="$PROJECT_DIR$/Topics/Integer types and operations/Theory" />
+            <option value="$PROJECT_DIR$/Topics/Multiple conditions  switch/Harry Potter" />
+            <option value="$PROJECT_DIR$/Topics/Multiple conditions  switch/Removing breaks" />
+            <option value="$PROJECT_DIR$/Topics/Multiple conditions  switch/Rewriting code using switch" />
+            <option value="$PROJECT_DIR$/Topics/Multiple conditions  switch/Theory" />
+            <option value="$PROJECT_DIR$/Topics/The Map interface/Create a map" />
+            <option value="$PROJECT_DIR$/Topics/The Map interface/Duplications" />
+            <option value="$PROJECT_DIR$/Topics/The Map interface/How many entries" />
+            <option value="$PROJECT_DIR$/Topics/The Map interface/Theory" />
+            <option value="$PROJECT_DIR$/Topics/The Map interface/Value or min" />
+            <option value="$PROJECT_DIR$/Topics/While and do-while loops/Guess the Number" />
+            <option value="$PROJECT_DIR$/Topics/While and do-while loops/Statements" />
+            <option value="$PROJECT_DIR$/Topics/While and do-while loops/The sum of elements" />
+            <option value="$PROJECT_DIR$/Topics/While and do-while loops/Theory" />
+            <option value="$PROJECT_DIR$/util" />
+          </set>
+        </option>
+      </GradleProjectSettings>
+    </option>
+  </component>
+</project>
