@@ -3,29 +3,29 @@ hyperskill_project:
   ide_files: https://cogniterra.org/media/attachments/lesson/26066/additional_files.json
   is_template_based: false
   use_ide: true
-update_date: "Sat, 16 Dec 2023 13:53:47 UTC"
+update_date: "Fri, 05 Jan 2024 06:08:18 UTC"
 stages:
   - id: 1086
     step: 16601
     is_completed: true
   - id: 1087
     step: 16602
-    is_completed: false
+    is_completed: true
   - id: 1088
     step: 16603
-    is_completed: false
+    is_completed: true
   - id: 1089
     step: 16604
-    is_completed: false
+    is_completed: true
   - id: 1090
     step: 16605
-    is_completed: false
+    is_completed: true
   - id: 1091
     step: 16606
-    is_completed: false
+    is_completed: true
   - id: 1092
     step: 16607
-    is_completed: false
+    is_completed: true
 topics:
   0:
     - title: Modulo division
@@ -34,16 +34,14 @@ topics:
       theory_id: 16547
     - title: "Big O: how to count it"
       theory_id: 35901
-    - title: "Best, average and worst cases"
+    - title: Complexity cases and how to use them
       theory_id: 20084
-    - title: Data structures
+    - title: Abstract and concrete data structures
       theory_id: 16927
     - title: World Wide Web
       theory_id: 6633
     - title: "HTTP: HyperText Transfer Protocol"
       theory_id: 6569
-    - title: Units of information
-      theory_id: 6865
     - title: "Write, compile, and run"
       theory_id: 3739
     - title: "Basic terms: JVM, JRE, JDK"
@@ -52,6 +50,8 @@ topics:
       theory_id: 8977
     - title: Parameters and options
       theory_id: 9746
+    - title: Units of information
+      theory_id: 6865
     - title: Spring and Spring Boot frameworks
       theory_id: 7944
     - title: Getting started with Spring Boot
@@ -62,8 +62,6 @@ topics:
       theory_id: 15090
     - title: Pseudocode basics
       theory_id: 19510
-    - title: Complex constructions in pseudocode
-      theory_id: 20922
     - title: Fixed-size array
       theory_id: 20078
     - title: Dynamic array
@@ -106,6 +104,8 @@ topics:
       theory_id: 20069
     - title: Spring Security Crypto
       theory_id: 21866
+    - title: Complex constructions in pseudocode
+      theory_id: 20922
     - title: "Web security, OWASP"
       theory_id: 14755
     - title: Getting started with Spring Security
@@ -156,8 +156,6 @@ topics:
       theory_id: 3507
     - title: "Multiple conditions: switch"
       theory_id: 3504
-    - title: Web development
-      theory_id: 13931
     - title: Data types and their sizes
       theory_id: 3532
     - title: Type casting
@@ -178,6 +176,8 @@ topics:
       theory_id: 3511
     - title: Arrays as parameters
       theory_id: 3594
+    - title: Web development
+      theory_id: 13931
     - title: Characters
       theory_id: 3514
     - title: String
@@ -188,18 +188,14 @@ topics:
       theory_id: 3536
     - title: First glance at exceptions
       theory_id: 3497
-    - title: NullPointerException
-      theory_id: 1945
-    - title: Iterating over arrays
-      theory_id: 3602
-    - title: What is object-oriented programming
-      theory_id: 3614
-    - title: Grouping classes with packages
-      theory_id: 3621
     - title: Hierarchy of exceptions
       theory_id: 3570
     - title: Exception handling
       theory_id: 3552
+    - title: NullPointerException
+      theory_id: 1945
+    - title: Iterating over arrays
+      theory_id: 3602
     - title: Build tools
       theory_id: 4284
     - title: JAR files
@@ -218,6 +214,8 @@ topics:
       theory_id: 8504
     - title: Frameworks
       theory_id: 6701
+    - title: What is object-oriented programming
+      theory_id: 3614
     - title: What are bugs
       theory_id: 5504
     - title: Functional testing
@@ -226,8 +224,6 @@ topics:
       theory_id: 7545
     - title: Dependency injection
       theory_id: 20580
-    - title: Concept of design patterns
-      theory_id: 3611
     - title: Interfaces
       theory_id: 9640
     - title: YAML
@@ -236,30 +232,32 @@ topics:
       theory_id: 8956
     - title: Coupling and cohesion
       theory_id: 21478
-    - title: Introduction to software architecture
-      theory_id: 15368
+    - title: Concept of design patterns
+      theory_id: 3611
     - title: "Synchronous, asynchronous, parallel"
       theory_id: 9332
     - title: Processes and threads
       theory_id: 9420
+    - title: What are databases
+      theory_id: 8497
     - title: HTML basics
       theory_id: 6434
+    - title: Introduction to software architecture
+      theory_id: 15368
     - title: Tags and Attributes
       theory_id: 7536
     - title: HTML page structure
       theory_id: 6491
-    - title: What are databases
-      theory_id: 8497
-    - title: JSON
-      theory_id: 6854
-    - title: Data and object mapping
-      theory_id: 8262
     - title: Introduction to logging
       theory_id: 5538
     - title: Debugging techniques
       theory_id: 13775
     - title: "Hashing: overview"
       theory_id: 9831
+    - title: JSON
+      theory_id: 6854
+    - title: Data and object mapping
+      theory_id: 8262
     - title: Hash function
       theory_id: 30143
     - title: Hash table
@@ -314,6 +312,8 @@ topics:
       theory_id: 17081
     - title: Defining classes
       theory_id: 3618
+    - title: Grouping classes with packages
+      theory_id: 3621
     - title: Instance methods
       theory_id: 3495
     - title: Initializing new instances. Constructor
@@ -346,10 +346,10 @@ topics:
       theory_id: 3587
     - title: Declaring functionality with interfaces
       theory_id: 3615
-    - title: Inner classes
-      theory_id: 11505
     - title: Wrapping classes. Boxing
       theory_id: 3595
+    - title: Inner classes
+      theory_id: 11505
   1:
     - title: Logging in Spring Boot
       theory_id: 27485
@@ -389,14 +389,14 @@ topics:
       theory_id: 8611
     - title: Logic and comparison expressions
       theory_id: 8619
-    - title: Basic INSERT statement
-      theory_id: 9059
-    - title: Basic DELETE statement
-      theory_id: 9075
     - title: The NULL value
       theory_id: 7907
     - title: Special WHERE operators
       theory_id: 10521
+    - title: Basic INSERT statement
+      theory_id: 9059
+    - title: Basic DELETE statement
+      theory_id: 9075
     - title: Object-Relational Mapping (ORM)
       theory_id: 8312
     - title: Introduction to JPA

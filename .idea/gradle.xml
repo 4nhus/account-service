@@ -11,10 +11,21 @@
           <set>
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/Account Service (Java)/task" />
+            <option value="$PROJECT_DIR$/Account Service (Java)/task/build/classes/java" />
+            <option value="$PROJECT_DIR$/Account Service (Java)/task/build/generated/sources/annotationProcessor/java" />
+            <option value="$PROJECT_DIR$/Account Service (Java)/task/build/generated/sources/headers/java" />
+            <option value="$PROJECT_DIR$/Account Service (Java)/task/build/reports/tests" />
+            <option value="$PROJECT_DIR$/Account Service (Java)/task/build/test-results" />
+            <option value="$PROJECT_DIR$/Account Service (Java)/task/build/tmp" />
             <option value="$PROJECT_DIR$/Topics/Break and continue. Branching/Divisible by 4" />
             <option value="$PROJECT_DIR$/Topics/Break and continue. Branching/Even or odd" />
             <option value="$PROJECT_DIR$/Topics/Break and continue. Branching/The same results" />
             <option value="$PROJECT_DIR$/Topics/Break and continue. Branching/Theory" />
+            <option value="$PROJECT_DIR$/Topics/Builder/Builder" />
+            <option value="$PROJECT_DIR$/Topics/Builder/Builder (1)" />
+            <option value="$PROJECT_DIR$/Topics/Builder/Describe the builder" />
+            <option value="$PROJECT_DIR$/Topics/Builder/Disadvantage of Builder pattern" />
+            <option value="$PROJECT_DIR$/Topics/Builder/Theory" />
             <option value="$PROJECT_DIR$/Topics/Conditional statement/Determine the output" />
             <option value="$PROJECT_DIR$/Topics/Conditional statement/Statements" />
             <option value="$PROJECT_DIR$/Topics/Conditional statement/Symmetrical number" />
@@ -23,6 +34,12 @@
             <option value="$PROJECT_DIR$/Topics/Declaring methods/Sum of numbers in the range" />
             <option value="$PROJECT_DIR$/Topics/Declaring methods/The sign of a number" />
             <option value="$PROJECT_DIR$/Topics/Declaring methods/Theory" />
+            <option value="$PROJECT_DIR$/Topics/HashMap/Advantages" />
+            <option value="$PROJECT_DIR$/Topics/HashMap/Countries and capitals" />
+            <option value="$PROJECT_DIR$/Topics/HashMap/Remove long names" />
+            <option value="$PROJECT_DIR$/Topics/HashMap/The same letter" />
+            <option value="$PROJECT_DIR$/Topics/HashMap/The same pairs" />
+            <option value="$PROJECT_DIR$/Topics/HashMap/Theory" />
             <option value="$PROJECT_DIR$/Topics/Integer types and operations/Calculate the digit" />
             <option value="$PROJECT_DIR$/Topics/Integer types and operations/Difference of times" />
             <option value="$PROJECT_DIR$/Topics/Integer types and operations/Integer operations" />
@@ -36,10 +53,23 @@
             <option value="$PROJECT_DIR$/Topics/The Map interface/How many entries" />
             <option value="$PROJECT_DIR$/Topics/The Map interface/Theory" />
             <option value="$PROJECT_DIR$/Topics/The Map interface/Value or min" />
+            <option value="$PROJECT_DIR$/Topics/The utility class Collections/An uncompiled statement" />
+            <option value="$PROJECT_DIR$/Topics/The utility class Collections/Collection class basics" />
+            <option value="$PROJECT_DIR$/Topics/The utility class Collections/Frequency of characters" />
+            <option value="$PROJECT_DIR$/Topics/The utility class Collections/Sorting sequences" />
+            <option value="$PROJECT_DIR$/Topics/The utility class Collections/The first index of a sublist" />
+            <option value="$PROJECT_DIR$/Topics/The utility class Collections/Theory" />
             <option value="$PROJECT_DIR$/Topics/While and do-while loops/Guess the Number" />
             <option value="$PROJECT_DIR$/Topics/While and do-while loops/Statements" />
             <option value="$PROJECT_DIR$/Topics/While and do-while loops/The sum of elements" />
             <option value="$PROJECT_DIR$/Topics/While and do-while loops/Theory" />
+            <option value="$PROJECT_DIR$/Topics/hashCode() and equals() in Collections/Duplicate elements in HashSet" />
+            <option value="$PROJECT_DIR$/Topics/hashCode() and equals() in Collections/Theory" />
+            <option value="$PROJECT_DIR$/Topics/hashCode() and equals()/A pair of methods to be overridden" />
+            <option value="$PROJECT_DIR$/Topics/hashCode() and equals()/Am I satisfied" />
+            <option value="$PROJECT_DIR$/Topics/hashCode() and equals()/Complex numbers" />
+            <option value="$PROJECT_DIR$/Topics/hashCode() and equals()/Comprehension" />
+            <option value="$PROJECT_DIR$/Topics/hashCode() and equals()/Theory" />
             <option value="$PROJECT_DIR$/util" />
           </set>
         </option>

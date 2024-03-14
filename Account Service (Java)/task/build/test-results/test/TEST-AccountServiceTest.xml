@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="AccountServiceTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2023-12-16T14:37:47" hostname="Anhs-MacBook-Pro.local" time="1.524">
+<testsuite name="AccountServiceTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2024-01-05T10:34:31" hostname="Anhs-MacBook-Pro.local" time="3.176">
   <properties/>
-  <testcase name="start" classname="AccountServiceTest" time="1.524"/>
+  <testcase name="start" classname="AccountServiceTest" time="3.176"/>
   <system-out><![CDATA[?[1;31m
 Start test 1?[0m
 ?[0;34m
@@ -13,46 +13,30 @@ Start test 1?[0m
 ?[0m?[0;34m =========|_|==============|___/=/_/_/_/
 ?[0m?[0;34m :: Spring Boot ::                (v3.0.2)
 ?[0m?[0;34m
-?[0m?[0;34m2023-12-16T21:37:48.332+07:00  INFO 98316 --- [    Test worker] account.AccountServiceApplication        : Starting AccountServiceApplication using Java 17.0.9 with PID 98316 (started by anhus in /Users/anhus/Downloads/Account Service (Java)/Account Service (Java)/task)
-?[0m?[0;34m2023-12-16T21:37:48.334+07:00  INFO 98316 --- [    Test worker] account.AccountServiceApplication        : No active profile set, falling back to 1 default profile: "default"
-?[0m?[0;34m2023-12-16T21:37:48.856+07:00  INFO 98316 --- [    Test worker] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port(s): 28852 (http)
-?[0m?[0;34m2023-12-16T21:37:48.862+07:00  INFO 98316 --- [    Test worker] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
-?[0m?[0;34m2023-12-16T21:37:48.862+07:00  INFO 98316 --- [    Test worker] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.5]
-?[0m?[0;34m2023-12-16T21:37:48.905+07:00  INFO 98316 --- [    Test worker] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
-?[0m?[0;34m2023-12-16T21:37:48.906+07:00  INFO 98316 --- [    Test worker] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 552 ms
-?[0m?[0;34m2023-12-16T21:37:49.181+07:00  INFO 98316 --- [    Test worker] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 14 endpoint(s) beneath base path '/actuator'
-?[0m?[0;34m2023-12-16T21:37:49.209+07:00  INFO 98316 --- [    Test worker] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port(s): 28852 (http) with context path ''
-?[0m?[0;34m2023-12-16T21:37:49.217+07:00  INFO 98316 --- [    Test worker] account.AccountServiceApplication        : Started AccountServiceApplication in 1.039 seconds (process running for 1.52)
-?[0;34m2023-12-16T21:37:49.375+07:00  INFO 98316 --- [io-28852-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
-?[0m?[0;34m2023-12-16T21:37:49.375+07:00  INFO 98316 --- [io-28852-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
-?[0m?[0;34m2023-12-16T21:37:49.376+07:00  INFO 98316 --- [io-28852-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 1 ms
-?[0m?[1;31m
-Start test 2?[0m
-?[1;31m
-Start test 3?[0m
-?[1;31m
-Start test 4?[0m
-?[1;31m
-Start test 5?[0m
-?[1;31m
-Start test 6?[0m
-?[1;31m
-Start test 7?[0m
-?[1;31m
-Start test 8?[0m
-?[1;31m
-Start test 9?[0m
-?[1;31m
-Start test 10?[0m
-?[1;31m
-Start test 11?[0m
-?[1;31m
-Start test 12?[0m
-?[0;34m2023-12-16T21:37:49.468+07:00  WARN 98316 --- [io-28852-exec-2] .w.s.m.s.DefaultHandlerExceptionResolver : Resolved [org.springframework.web.HttpRequestMethodNotSupportedException: Request method 'GET' is not supported]
-?[0;34m2023-12-16T21:37:49.482+07:00  WARN 98316 --- [io-28852-exec-3] .w.s.m.s.DefaultHandlerExceptionResolver : Resolved [org.springframework.web.HttpRequestMethodNotSupportedException: Request method 'PUT' is not supported]
-?[0;34m2023-12-16T21:37:49.486+07:00  WARN 98316 --- [io-28852-exec-4] .w.s.m.s.DefaultHandlerExceptionResolver : Resolved [org.springframework.web.HttpRequestMethodNotSupportedException: Request method 'DELETE' is not supported]
-?[1;31m
-Start test 13?[0m
-]]></system-out>
+?[0m?[0;34m2024-01-05T21:34:32.289+11:00  INFO 12476 --- [    Test worker] account.AccountServiceApplication        : Starting AccountServiceApplication using Java 17.0.9 with PID 12476 (started by anhus in /Users/anhus/Downloads/Account Service (Java)/Account Service (Java)/task)
+?[0m?[0;34m2024-01-05T21:34:32.292+11:00  INFO 12476 --- [    Test worker] account.AccountServiceApplication        : No active profile set, falling back to 1 default profile: "default"
+?[0m?[0;34m2024-01-05T21:34:32.756+11:00  INFO 12476 --- [    Test worker] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+?[0m?[0;34m2024-01-05T21:34:32.832+11:00  INFO 12476 --- [    Test worker] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 71 ms. Found 5 JPA repository interfaces.
+?[0m?[0;34m2024-01-05T21:34:33.122+11:00  INFO 12476 --- [    Test worker] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port(s): 28852 (https)
+?[0m?[0;34m2024-01-05T21:34:33.130+11:00  INFO 12476 --- [    Test worker] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+?[0m?[0;34m2024-01-05T21:34:33.130+11:00  INFO 12476 --- [    Test worker] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.5]
+?[0m?[0;34m2024-01-05T21:34:33.178+11:00  INFO 12476 --- [    Test worker] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+?[0m?[0;34m2024-01-05T21:34:33.179+11:00  INFO 12476 --- [    Test worker] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 862 ms
+?[0m?[0;34m2024-01-05T21:34:33.299+11:00  INFO 12476 --- [    Test worker] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+?[0m?[0;34m2024-01-05T21:34:33.325+11:00  INFO 12476 --- [    Test worker] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.1.6.Final
+?[0m?[0;34m2024-01-05T21:34:33.404+11:00  WARN 12476 --- [    Test worker] org.hibernate.orm.deprecation            : HHH90000021: Encountered deprecated setting [javax.persistence.sharedCache.mode], use [jakarta.persistence.sharedCache.mode] instead
+?[0m?[0;34m2024-01-05T21:34:33.455+11:00  INFO 12476 --- [    Test worker] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+?[0m?[0;34m2024-01-05T21:34:33.563+11:00  INFO 12476 --- [    Test worker] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection conn0: url=jdbc:h2:file:../service_db user=SA
+?[0m?[0;34m2024-01-05T21:34:33.564+11:00  INFO 12476 --- [    Test worker] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+?[0m?[0;34m2024-01-05T21:34:33.577+11:00  INFO 12476 --- [    Test worker] SQL dialect                              : HHH000400: Using dialect: org.hibernate.dialect.H2Dialect
+?[0m?[0;34m2024-01-05T21:34:34.122+11:00  INFO 12476 --- [    Test worker] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000490: Using JtaPlatform implementation: [org.hibernate.engine.transaction.jta.platform.internal.NoJtaPlatform]
+?[0m?[0;34m2024-01-05T21:34:34.126+11:00  INFO 12476 --- [    Test worker] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+?[0m?[0;34m2024-01-05T21:34:34.430+11:00  WARN 12476 --- [    Test worker] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+?[0m?[0;34m2024-01-05T21:34:34.631+11:00  INFO 12476 --- [    Test worker] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 14 endpoint(s) beneath base path '/actuator'
+?[0m?[0;34m2024-01-05T21:34:34.652+11:00  INFO 12476 --- [    Test worker] o.s.s.web.DefaultSecurityFilterChain     : Will secure any request with [org.springframework.security.web.session.DisableEncodeUrlFilter@4b93a232, org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter@6c6fdf5d, org.springframework.security.web.context.SecurityContextHolderFilter@75dc995f, org.springframework.security.web.header.HeaderWriterFilter@2fb171f5, org.springframework.security.web.authentication.logout.LogoutFilter@5a75bad4, org.springframework.security.web.authentication.www.BasicAuthenticationFilter@1d63f6be, org.springframework.security.web.savedrequest.RequestCacheAwareFilter@498102a4, org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter@3a72b2c9, org.springframework.security.web.authentication.AnonymousAuthenticationFilter@187c8f96, org.springframework.security.web.access.ExceptionTranslationFilter@33d75081, org.springframework.security.web.access.intercept.AuthorizationFilter@16263fb2]
+?[0m?[0;34m2024-01-05T21:34:34.975+11:00  INFO 12476 --- [    Test worker] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port(s): 28852 (https) with context path ''
+?[0m?[0;34m2024-01-05T21:34:34.986+11:00  INFO 12476 --- [    Test worker] account.AccountServiceApplication        : Started AccountServiceApplication in 2.868 seconds (process running for 3.297)
+?[0m?[0;34mCN=accountant_service, L=Sydney, ST=NSW, C=AU SHA384withRSA
+?[0m]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>

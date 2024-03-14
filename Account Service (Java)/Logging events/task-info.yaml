@@ -842,6 +842,965 @@ files:
       
       }
     learner_created: false
+  - name: src/account/AccountService.java
+    visible: true
+    text: |
+      package account;
+      
+      import account.exceptions.*;
+      import account.payroll.Payroll;
+      import account.payroll.PayrollID;
+      import account.payroll.PayrollRepository;
+      import org.springframework.security.crypto.password.PasswordEncoder;
+      import org.springframework.stereotype.Service;
+      import org.springframework.transaction.annotation.Transactional;
+      
+      import java.time.LocalDate;
+      import java.util.List;
+      import java.util.Optional;
+      
+      @Service
+      public class AccountService {
+          private final UserRepository userRepository;
+          private final PayrollRepository payrollRepository;
+          private final GroupRepository groupRepository;
+          private final PasswordEncoder passwordEncoder;
+      
+          public AccountService(UserRepository userRepository, PayrollRepository payrollRepository, GroupRepository groupRepository, PasswordEncoder passwordEncoder) {
+              this.userRepository = userRepository;
+              this.payrollRepository = payrollRepository;
+              this.groupRepository = groupRepository;
+              this.passwordEncoder = passwordEncoder;
+          }
+      
+          public AccountUser getUserFromEmail(String email) {
+              return userRepository.findUserByEmailIgnoreCase(email).orElse(null);
+          }
+      
+          public AccountUser addUser(AccountUser user) {
+              if (userRepository.findUserByEmailIgnoreCase(user.getEmail()).isPresent()) {
+                  throw new UserAlreadyExistsException();
+              }
+      
+              user.setEmail(user.getEmail().toLowerCase());
+              user.setPassword(passwordEncoder.encode(user.getPassword()));
+      
+              boolean isAdministratorAlreadyAdded = groupRepository.getAdminGroup().getUsersInGroup().size() == 1;
+      
+              if (isAdministratorAlreadyAdded) {
+                  Group users = groupRepository.getUserGroup();
+                  users.getUsersInGroup().add(user);
+                  user.getRoles().add(users);
+                  groupRepository.save(users);
+              } else {
+                  Group admin = groupRepository.getAdminGroup();
+                  admin.getUsersInGroup().add(user);
+                  user.getRoles().add(admin);
+                  groupRepository.save(admin);
+              }
+      
+              return getUserFromEmail(user.getEmail());
+          }
+      
+          public void changeUserPassword(String email, String newPassword) {
+              AccountUser user = getUserFromEmail(email);
+      
+              if (passwordEncoder.matches(newPassword, user.getPassword())) {
+                  throw new SamePasswordException();
+              }
+      
+              user.setPassword(passwordEncoder.encode(newPassword));
+              userRepository.save(user);
+          }
+      
+          @Transactional
+          public void addPayrolls(List<Payroll> payrolls) {
+              payrolls.forEach(payroll -> {
+                  if (payroll.getSalary() < 0) {
+                      throw new NegativeSalaryException();
+                  }
+      
+                  if (getUserFromEmail(payroll.getEmployee()) == null) {
+                      throw new UserDoesNotExistException();
+                  }
+      
+                  payroll.setEmployee(payroll.getEmployee().toLowerCase());
+      
+                  if (payrollRepository.existsById(new PayrollID(payroll.getEmployee(), payroll.getPeriod()))) {
+                      throw new PayrollAlreadyExistsException();
+                  }
+      
+                  payrollRepository.save(payroll);
+              });
+          }
+      
+          public void updatePayroll(Payroll payroll) {
+              if (payroll.getSalary() < 0) {
+                  throw new NegativeSalaryException();
+              }
+      
+              if (getUserFromEmail(payroll.getEmployee()) == null) {
+                  throw new UserDoesNotExistException();
+              }
+      
+              Payroll updatedPayroll = payrollRepository.findById(new PayrollID(payroll.getEmployee().toLowerCase(), payroll.getPeriod())).get();
+      
+              updatedPayroll.setSalary(payroll.getSalary());
+              payrollRepository.save(updatedPayroll);
+          }
+      
+      
+          public Optional<Payroll> getPayrollForUser(String email, LocalDate period) {
+              return payrollRepository.findById(new PayrollID(email, period));
+          }
+      
+          public List<Payroll> getAllPayrollsForUser(String email) {
+              return payrollRepository.getPayrollsByEmployeeIgnoreCaseOrderByPeriodDesc(email);
+          }
+      
+          public List<AccountUser> getUsers() {
+              return userRepository.getAllUsersWithAscendingIds();
+          }
+      
+          public void deleteUser(String email) {
+              AccountUser user = getUserFromEmail(email);
+      
+              if (user.getRoles().contains(groupRepository.getAdminGroup())) {
+                  throw new DeleteAdminException("/api/admin/user/" + email);
+              }
+      
+              List<Group> groups = groupRepository.findGroupsByUsersInGroupContains(user);
+      
+              groups.forEach(g -> {
+                  g.getUsersInGroup().remove(user);
+                  user.getRoles().remove(g);
+                  groupRepository.save(g);
+              });
+      
+              userRepository.delete(user);
+          }
+      
+          public AccountUser changeUserRole(String email, Group.Role role, String operation) {
+              AccountUser user = getUserFromEmail(email);
+      
+              if (user == null) {
+                  throw new UserNotFoundException("/api/admin/user/role");
+              }
+      
+              Group group = switch (role) {
+                  case ADMINISTRATOR -> groupRepository.getAdminGroup();
+                  case USER -> groupRepository.getUserGroup();
+                  case ACCOUNTANT -> groupRepository.getAccountantGroup();
+              };
+      
+              if (operation.equals("GRANT")) {
+                  if (user.getRolesAsEnumSet().contains(Group.Role.ADMINISTRATOR) && (role == Group.Role.ACCOUNTANT || role == Group.Role.USER)) {
+                      throw new CombineAdminBusinessRoleException();
+                  } else if ((user.getRolesAsEnumSet().contains(Group.Role.ACCOUNTANT) || user.getRolesAsEnumSet().contains(Group.Role.USER)) && role == Group.Role.ADMINISTRATOR) {
+                      throw new CombineAdminBusinessRoleException();
+                  }
+      
+                  group.getUsersInGroup().add(user);
+                  user.getRoles().add(group);
+              } else {
+                  if (!user.getRolesAsEnumSet().contains(role)) {
+                      throw new UserDoesNotHaveRoleException();
+                  }
+      
+                  if (user.getRolesAsEnumSet().contains(Group.Role.ADMINISTRATOR)) {
+                      throw new DeleteAdminRoleException();
+                  }
+      
+                  if (user.getRoles().size() == 1) {
+                      throw new DeleteUserOnlyRoleException();
+                  }
+      
+                  group.getUsersInGroup().remove(user);
+                  user.getRoles().remove(group);
+              }
+      
+              groupRepository.save(group);
+      
+              return user;
+          }
+      }
+    learner_created: true
+  - name: src/account/exceptions/UserAlreadyExistsException.java
+    visible: true
+    text: |
+      package account.exceptions;
+      
+      public class UserAlreadyExistsException extends RuntimeException {
+      }
+    learner_created: true
+  - name: src/account/exceptions/RoleNotFoundException.java
+    visible: true
+    text: |-
+      package account.exceptions;
+      
+      public class RoleNotFoundException extends RuntimeException {
+      }
+    learner_created: true
+  - name: src/account/exceptions/DeleteUserOnlyRoleException.java
+    visible: true
+    text: |
+      package account.exceptions;
+      
+      public class DeleteUserOnlyRoleException extends RuntimeException {
+      }
+    learner_created: true
+  - name: src/account/exceptions/PayrollAlreadyExistsException.java
+    visible: true
+    text: |
+      package account.exceptions;
+      
+      public class PayrollAlreadyExistsException extends RuntimeException {
+      }
+    learner_created: true
+  - name: src/account/exceptions/UserDoesNotHaveRoleException.java
+    visible: true
+    text: |
+      package account.exceptions;
+      
+      public class UserDoesNotHaveRoleException extends RuntimeException {
+      }
+    learner_created: true
+  - name: src/account/exceptions/PasswordTooShortException.java
+    visible: true
+    text: |
+      package account.exceptions;
+      
+      import lombok.Getter;
+      
+      @Getter
+      public class PasswordTooShortException extends RuntimeException {
+          private final String path;
+      
+          public PasswordTooShortException(String path) {
+              this.path = path;
+          }
+      }
+    learner_created: true
+  - name: src/account/exceptions/ErrorMessage.java
+    visible: true
+    text: |
+      package account.exceptions;
+      
+      import lombok.Data;
+      import org.springframework.http.HttpStatus;
+      
+      import java.time.LocalDateTime;
+      
+      @Data
+      public class ErrorMessage {
+          public ErrorMessage(LocalDateTime timestamp, HttpStatus status, String error, String message, String path) {
+              this.timestamp = timestamp;
+              this.status = status.value();
+              this.error = error;
+              this.message = message;
+              this.path = path;
+          }
+      
+          private LocalDateTime timestamp;
+          private int status;
+          private String error;
+          private String message;
+          private String path;
+      }
+    learner_created: true
+  - name: src/account/payroll/Payroll.java
+    visible: true
+    text: |
+      package account.payroll;
+      
+      import com.fasterxml.jackson.annotation.JsonCreator;
+      import com.fasterxml.jackson.annotation.JsonProperty;
+      import jakarta.persistence.Entity;
+      import jakarta.persistence.Id;
+      import jakarta.persistence.IdClass;
+      import jakarta.persistence.Table;
+      import jakarta.validation.constraints.NotNull;
+      import lombok.AllArgsConstructor;
+      import lombok.Data;
+      import lombok.NoArgsConstructor;
+      
+      import java.time.LocalDate;
+      
+      @Entity
+      @Table(name = "payrolls")
+      @IdClass(PayrollID.class)
+      @Data
+      @AllArgsConstructor
+      @NoArgsConstructor
+      public class Payroll {
+          @Id
+          @NotNull
+          private String employee;
+          @Id
+          @NotNull
+          private LocalDate period;
+          @NotNull
+          private long salary;
+      
+          @JsonCreator
+          public Payroll(@JsonProperty("employee") String employee, @JsonProperty("period") String period, @JsonProperty("salary") long salary) {
+              this.employee = employee;
+              String[] periodParts = period.split("-");
+              int month = Integer.parseInt(periodParts[0]);
+              int year = Integer.parseInt(periodParts[1]);
+              this.period = LocalDate.of(year, month, 1);
+              this.salary = salary;
+          }
+      }
+    learner_created: true
+  - name: src/account/exceptions/DeleteAdminRoleException.java
+    visible: true
+    text: |
+      package account.exceptions;
+      
+      public class DeleteAdminRoleException extends RuntimeException {
+      }
+    learner_created: true
+  - name: src/account/AccountRestController.java
+    visible: true
+    text: |
+      package account;
+      
+      import account.exceptions.*;
+      import account.payroll.Payroll;
+      import jakarta.validation.Valid;
+      import jakarta.validation.constraints.NotNull;
+      import org.springframework.http.HttpStatus;
+      import org.springframework.http.ResponseEntity;
+      import org.springframework.http.converter.HttpMessageConversionException;
+      import org.springframework.security.core.Authentication;
+      import org.springframework.web.bind.annotation.*;
+      
+      import java.time.LocalDate;
+      import java.time.LocalDateTime;
+      import java.time.format.TextStyle;
+      import java.util.List;
+      import java.util.Locale;
+      
+      @RestController
+      public class AccountRestController {
+          private final AccountService accountService;
+      
+          public AccountRestController(AccountService accountService) {
+              this.accountService = accountService;
+          }
+      
+          public UserResponse formatUserAsResponse(AccountUser user) {
+              return new UserResponse(user.getId(), user.getName(), user.getLastname(), user.getEmail(), user.getFormattedAndSortedRolesAsStrings());
+          }
+      
+          @PostMapping("api/auth/signup")
+          public ResponseEntity<UserResponse> signupUser(@Valid @RequestBody AccountUser user) {
+              if (PasswordUtils.isPasswordTooShort(user.getPassword())) {
+                  throw new PasswordTooShortException("/api/auth/signup");
+              }
+      
+              if (PasswordUtils.isBreachedPassword(user.getPassword())) {
+                  throw new BreachedPasswordException("/api/auth/signup");
+              }
+              user = accountService.addUser(user);
+              return ResponseEntity.ok(formatUserAsResponse(user));
+          }
+      
+          @PostMapping("api/auth/changepass")
+          public ResponseEntity<UpdatedPasswordResponse> changePassword(@Valid @RequestBody ChangePasswordRequest request, Authentication auth) {
+              if (PasswordUtils.isPasswordTooShort(request.new_password)) {
+                  throw new PasswordTooShortException("/api/auth/changepass");
+              }
+      
+              if (PasswordUtils.isBreachedPassword(request.new_password)) {
+                  throw new BreachedPasswordException("/api/auth/changepass");
+              }
+      
+              accountService.changeUserPassword(auth.getName(), request.new_password);
+      
+              return ResponseEntity.ok(new UpdatedPasswordResponse(auth.getName(), "The password has been updated successfully"));
+          }
+      
+      
+          @PostMapping("api/acct/payments")
+          public ResponseEntity<PayrollStatusResponse> uploadPayrolls(@RequestBody List<Payroll> payrolls) {
+              accountService.addPayrolls(payrolls);
+      
+              return ResponseEntity.ok(new PayrollStatusResponse("Added successfully!"));
+          }
+      
+          @PutMapping("api/acct/payments")
+          public ResponseEntity<PayrollStatusResponse> updatePayroll(@RequestBody Payroll payroll) {
+              accountService.updatePayroll(payroll);
+      
+              return ResponseEntity.ok(new PayrollStatusResponse("Updated successfully!"));
+          }
+      
+          @ExceptionHandler(HttpMessageConversionException.class)
+          public ResponseEntity<ErrorMessage> handleInvalidPeriod(HttpMessageConversionException e) {
+              return ResponseEntity.badRequest().body(new ErrorMessage(LocalDateTime.now(), HttpStatus.BAD_REQUEST, "Bad Request", "Period month is invalid!", "/api/acct/payments"));
+          }
+      
+          public PayrollResponse formatPayrollAsResponse(Payroll payroll) {
+              if (payroll == null) {
+                  return null;
+              }
+              String period = payroll.getPeriod().getMonth().getDisplayName(TextStyle.FULL, Locale.ENGLISH) + "-" + payroll.getPeriod().getYear();
+              long dollars = payroll.getSalary() / 100;
+              long cents = payroll.getSalary() % 100;
+              String salary = dollars + " dollar(s) " + cents + " cent(s)";
+              AccountUser user = accountService.getUserFromEmail(payroll.getEmployee());
+              return new PayrollResponse(user.getName(), user.getLastname(), period, salary);
+          }
+      
+          @GetMapping("api/empl/payment")
+          public ResponseEntity<Object> getPayrolls(@RequestParam(required = false, name = "period") String periodString, Authentication auth) {
+              if (periodString == null) {
+                  return ResponseEntity.ok(accountService.getAllPayrollsForUser(auth.getName()).stream().map(this::formatPayrollAsResponse).toList());
+              } else {
+                  String[] periodParts = periodString.split("-");
+                  int month = Integer.parseInt(periodParts[0]);
+                  int year = Integer.parseInt(periodParts[1]);
+      
+                  if (month < 1 || month > 12) {
+                      throw new InvalidPeriodException();
+                  }
+      
+                  return ResponseEntity.ok(formatPayrollAsResponse(accountService.getPayrollForUser(auth.getName(), LocalDate.of(year, month, 1)).orElse(null)));
+              }
+          }
+      
+          @GetMapping("api/admin/user/")
+          public ResponseEntity<List<UserResponse>> getUsers() {
+              return ResponseEntity.ok(accountService.getUsers().stream().map(this::formatUserAsResponse).toList());
+          }
+      
+          @DeleteMapping("api/admin/user/{email}")
+          public ResponseEntity<DeletedUserResponse> deleteUser(@PathVariable String email) {
+              if (accountService.getUserFromEmail(email) == null) {
+                  throw new UserNotFoundException("/api/admin/user/" + email);
+              }
+      
+              accountService.deleteUser(email);
+      
+              return ResponseEntity.ok(new DeletedUserResponse(email, "Deleted successfully!"));
+      
+          }
+      
+          @PutMapping("api/admin/user/role")
+          public ResponseEntity<UserResponse> changeRoles(@RequestBody ChangeRoleRequest request) {
+              if (!request.role.matches("(ADMINISTRATOR)|(ACCOUNTANT)|(USER)")) {
+                  throw new RoleNotFoundException();
+              }
+      
+              Group.Role role = switch (request.role) {
+                  case "ADMINISTRATOR" -> Group.Role.ADMINISTRATOR;
+                  case "ACCOUNTANT" -> Group.Role.ACCOUNTANT;
+                  default -> Group.Role.USER;
+              };
+      
+              return ResponseEntity.ok(formatUserAsResponse(accountService.changeUserRole(request.user, role, request.operation)));
+          }
+      
+          public record UserResponse(long id, String name, String lastname, String email, String[] roles) {
+          }
+      
+          public record ChangePasswordRequest(@NotNull String new_password) {
+          }
+      
+          public record UpdatedPasswordResponse(String email, String status) {
+          }
+      
+          public record PayrollStatusResponse(String status) {
+          }
+      
+          public record PayrollResponse(String name, String lastname, String period, String salary) {
+          }
+      
+          public record DeletedUserResponse(String user, String status) {
+          }
+      
+          public record ChangeRoleRequest(String user, String role, String operation) {
+          }
+      }
+    learner_created: true
+  - name: src/account/exceptions/DeleteAdminException.java
+    visible: true
+    text: |-
+      package account.exceptions;
+      
+      import lombok.Getter;
+      
+      @Getter
+      public class DeleteAdminException extends RuntimeException {
+      
+          private final String path;
+      
+          public DeleteAdminException(String path) {
+              this.path = path;
+          }
+      }
+    learner_created: true
+  - name: src/account/exceptions/UserNotFoundException.java
+    visible: true
+    text: |
+      package account.exceptions;
+      
+      import lombok.Getter;
+      
+      @Getter
+      public class UserNotFoundException extends RuntimeException {
+      
+          private final String path;
+      
+          public UserNotFoundException(String path) {
+              this.path = path;
+          }
+      }
+    learner_created: true
+  - name: src/account/exceptions/InvalidPeriodException.java
+    visible: true
+    text: |
+      package account.exceptions;
+      
+      public class InvalidPeriodException extends RuntimeException {
+      }
+    learner_created: true
+  - name: src/account/exceptions/UserDoesNotExistException.java
+    visible: true
+    text: |
+      package account.exceptions;
+      
+      public class UserDoesNotExistException extends RuntimeException {
+      }
+    learner_created: true
+  - name: src/account/payroll/PayrollRepository.java
+    visible: true
+    text: |
+      package account.payroll;
+      
+      import org.springframework.data.repository.CrudRepository;
+      
+      import java.util.List;
+      
+      public interface PayrollRepository extends CrudRepository<Payroll, PayrollID> {
+          List<Payroll> getPayrollsByEmployeeIgnoreCaseOrderByPeriodDesc(String employee);
+      
+          List<Payroll> getAllByEmployee(String employee);
+      }
+    learner_created: true
+  - name: src/account/payroll/PayrollID.java
+    visible: true
+    text: |
+      package account.payroll;
+      
+      import lombok.AllArgsConstructor;
+      import lombok.Data;
+      import lombok.NoArgsConstructor;
+      
+      import java.io.Serializable;
+      import java.time.LocalDate;
+      
+      @Data
+      @AllArgsConstructor
+      @NoArgsConstructor
+      public class PayrollID implements Serializable {
+          private String employee;
+          private LocalDate period;
+      }
+    learner_created: true
+  - name: src/account/exceptions/CombineAdminBusinessRoleException.java
+    visible: true
+    text: |
+      package account.exceptions;
+      
+      public class CombineAdminBusinessRoleException extends RuntimeException {
+      }
+    learner_created: true
+  - name: src/account/exceptions/AccountExceptionHandler.java
+    visible: true
+    text: |
+      package account.exceptions;
+      
+      import org.springframework.http.HttpStatus;
+      import org.springframework.http.ResponseEntity;
+      import org.springframework.web.bind.annotation.ControllerAdvice;
+      import org.springframework.web.bind.annotation.ExceptionHandler;
+      import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
+      
+      import java.time.LocalDateTime;
+      
+      @ControllerAdvice
+      public class AccountExceptionHandler extends ResponseEntityExceptionHandler {
+          @ExceptionHandler(UserAlreadyExistsException.class)
+          public ResponseEntity<ErrorMessage> handleUserAlreadyExists() {
+              return ResponseEntity.badRequest().body(new ErrorMessage(LocalDateTime.now(), HttpStatus.BAD_REQUEST, "Bad Request", "User exist!", "/api/auth/signup"));
+          }
+      
+          @ExceptionHandler(PasswordTooShortException.class)
+          public ResponseEntity<ErrorMessage> handlePasswordTooShort(PasswordTooShortException e) {
+              return ResponseEntity.badRequest().body(new ErrorMessage(LocalDateTime.now(), HttpStatus.BAD_REQUEST, "Bad Request", "Password length must be 12 chars minimum!", e.getPath()));
+          }
+      
+          @ExceptionHandler(BreachedPasswordException.class)
+          public ResponseEntity<ErrorMessage> handleBreachedPassword(BreachedPasswordException e) {
+              return ResponseEntity.badRequest().body(new ErrorMessage(LocalDateTime.now(), HttpStatus.BAD_REQUEST, "Bad Request", "The password is in the hacker's database!", e.getPath()));
+          }
+      
+          @ExceptionHandler(SamePasswordException.class)
+          public ResponseEntity<ErrorMessage> handleSamePassword() {
+              return ResponseEntity.badRequest().body(new ErrorMessage(LocalDateTime.now(), HttpStatus.BAD_REQUEST, "Bad Request", "The passwords must be different!", "/api/auth/changepass"));
+          }
+      
+          @ExceptionHandler(NegativeSalaryException.class)
+          public ResponseEntity<ErrorMessage> handleNegativeSalary() {
+              return ResponseEntity.badRequest().body(new ErrorMessage(LocalDateTime.now(), HttpStatus.BAD_REQUEST, "Bad Request", "Salary cannot be negative for a payroll period!", "/api/acct/payments"));
+          }
+      
+          @ExceptionHandler(UserDoesNotExistException.class)
+          public ResponseEntity<ErrorMessage> handleUserDoesNotExist() {
+              return ResponseEntity.badRequest().body(new ErrorMessage(LocalDateTime.now(), HttpStatus.BAD_REQUEST, "Bad Request", "Pay roll user does not exist!", "/api/acct/payments"));
+          }
+      
+          @ExceptionHandler(PayrollAlreadyExistsException.class)
+          public ResponseEntity<ErrorMessage> handlePayrollAlreadyExists() {
+              return ResponseEntity.badRequest().body(new ErrorMessage(LocalDateTime.now(), HttpStatus.BAD_REQUEST, "Bad Request", "Payroll exist!", "/api/acct/payments"));
+          }
+      
+          @ExceptionHandler(InvalidPeriodException.class)
+          public ResponseEntity<ErrorMessage> handleInvalidPeriod() {
+              return ResponseEntity.badRequest().body(new ErrorMessage(LocalDateTime.now(), HttpStatus.BAD_REQUEST, "Bad Request", "Period month is invalid!", "/api/empl/payment"));
+          }
+      
+          @ExceptionHandler(UserNotFoundException.class)
+          public ResponseEntity<ErrorMessage> handleUserNotFound(UserNotFoundException e) {
+              return new ResponseEntity<>(new ErrorMessage(LocalDateTime.now(), HttpStatus.NOT_FOUND, "Not Found", "User not found!", e.getPath()), HttpStatus.NOT_FOUND);
+          }
+      
+          @ExceptionHandler(DeleteAdminException.class)
+          public ResponseEntity<ErrorMessage> handleDeleteAdmin(DeleteAdminException e) {
+              return ResponseEntity.badRequest().body(new ErrorMessage(LocalDateTime.now(), HttpStatus.BAD_REQUEST, "Bad Request", "Can't remove ADMINISTRATOR role!", e.getPath()));
+          }
+      
+          @ExceptionHandler(RoleNotFoundException.class)
+          public ResponseEntity<ErrorMessage> handleRoleNotFound() {
+              return new ResponseEntity<>(new ErrorMessage(LocalDateTime.now(), HttpStatus.NOT_FOUND, "Not Found", "Role not found!", "/api/admin/user/role"), HttpStatus.NOT_FOUND);
+          }
+      
+          @ExceptionHandler(UserDoesNotHaveRoleException.class)
+          public ResponseEntity<ErrorMessage> handleUserDoesNotHaveRole() {
+              return ResponseEntity.badRequest().body(new ErrorMessage(LocalDateTime.now(), HttpStatus.BAD_REQUEST, "Bad Request", "The user does not have a role!", "/api/admin/user/role"));
+          }
+      
+          @ExceptionHandler(DeleteUserOnlyRoleException.class)
+          public ResponseEntity<ErrorMessage> handleDeleteUserOnlyRole() {
+              return ResponseEntity.badRequest().body(new ErrorMessage(LocalDateTime.now(), HttpStatus.BAD_REQUEST, "Bad Request", "The user must have at least one role!", "/api/admin/user/role"));
+          }
+      
+          @ExceptionHandler(DeleteAdminRoleException.class)
+          public ResponseEntity<ErrorMessage> handleDeleteAdminRole() {
+              return ResponseEntity.badRequest().body(new ErrorMessage(LocalDateTime.now(), HttpStatus.BAD_REQUEST, "Bad Request", "Can't remove ADMINISTRATOR role!", "/api/admin/user/role"));
+          }
+      
+          @ExceptionHandler(CombineAdminBusinessRoleException.class)
+          public ResponseEntity<ErrorMessage> handleCombineAdminBusinessRole() {
+              return ResponseEntity.badRequest().body(new ErrorMessage(LocalDateTime.now(), HttpStatus.BAD_REQUEST, "Bad Request", "The user cannot combine administrative and business roles!", "/api/admin/user/role"));
+          }
+      }
+    learner_created: true
+  - name: src/account/exceptions/BreachedPasswordException.java
+    visible: true
+    text: |
+      package account.exceptions;
+      
+      import lombok.Getter;
+      
+      @Getter
+      public class BreachedPasswordException extends RuntimeException {
+          private final String path;
+      
+          public BreachedPasswordException(String path) {
+              this.path = path;
+          }
+      }
+    learner_created: true
+  - name: src/account/exceptions/SamePasswordException.java
+    visible: true
+    text: |
+      package account.exceptions;
+      
+      public class SamePasswordException extends RuntimeException {
+      }
+    learner_created: true
+  - name: src/account/PasswordUtils.java
+    visible: true
+    text: |
+      package account;
+      
+      import java.util.Arrays;
+      
+      public class PasswordUtils {
+          public static boolean isPasswordTooShort(String password) {
+              return Arrays.stream(password.split("")).filter(s -> !s.isBlank()).count() < 12;
+          }
+      
+          public static boolean isBreachedPassword(String password) {
+              return password.matches("PasswordFor((January)|(February)|(March)|(April)|(May)|(June)|(July)|(August)|(September)|(October)|(November)|(December))");
+          }
+      }
+    learner_created: true
+  - name: src/account/exceptions/NegativeSalaryException.java
+    visible: true
+    text: |
+      package account.exceptions;
+      
+      public class NegativeSalaryException extends RuntimeException {
+      }
+    learner_created: true
+  - name: src/account/exceptions/LockAdminException.java
+    visible: true
+    learner_created: true
+  - name: src/account/security/SecurityConfig.java
+    visible: true
+    text: |
+      package account;
+      
+      import jakarta.servlet.http.HttpServletResponse;
+      import org.springframework.context.annotation.Bean;
+      import org.springframework.context.annotation.Configuration;
+      import org.springframework.http.HttpMethod;
+      import org.springframework.security.config.Customizer;
+      import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+      import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+      import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+      import org.springframework.security.crypto.password.PasswordEncoder;
+      import org.springframework.security.web.SecurityFilterChain;
+      
+      @Configuration
+      public class SecurityConfig {
+          @Bean
+          public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+              return http
+                      .httpBasic(Customizer.withDefaults())
+                      .csrf(AbstractHttpConfigurer::disable)
+                      .authorizeHttpRequests(auth -> auth
+                              .requestMatchers("/api/admin/user/**").hasRole("ADMINISTRATOR")
+                              .requestMatchers("/api/acct/payments").hasRole("ACCOUNTANT")
+                              .requestMatchers(HttpMethod.POST, "/api/auth/signup", "/actuator/shutdown").permitAll()
+                              .requestMatchers(HttpMethod.POST, "/api/auth/changepass").hasAnyRole("ADMINISTRATOR", "ACCOUNTANT", "USER")
+                              .requestMatchers(HttpMethod.GET, "/api/empl/payment").hasAnyRole("ACCOUNTANT", "USER")
+                              .anyRequest().authenticated()
+      
+                      ).exceptionHandling(ex -> ex.accessDeniedHandler((request, response, accessDeniedException) -> response.sendError(HttpServletResponse.SC_FORBIDDEN, "Access Denied!")))
+                      .build();
+          }
+      
+          @Bean
+          public PasswordEncoder passwordEncoder() {
+              return new BCryptPasswordEncoder(13);
+          }
+      }
+    learner_created: true
+  - name: src/account/security/SecurityEvent.java
+    visible: true
+    learner_created: true
+  - name: src/account/security/SecurityLog.java
+    visible: true
+    learner_created: true
+  - name: src/account/security/SecurityLogRepository.java
+    visible: true
+    learner_created: true
+  - name: src/account/security/SecurityService.java
+    visible: true
+    learner_created: true
+  - name: src/account/group/Group.java
+    visible: true
+    text: |
+      package account;
+      
+      import jakarta.persistence.*;
+      import lombok.Getter;
+      import lombok.NoArgsConstructor;
+      import lombok.Setter;
+      import lombok.ToString;
+      import org.springframework.security.core.GrantedAuthority;
+      
+      import java.util.LinkedHashSet;
+      import java.util.Set;
+      
+      @Entity
+      @Table(name = "groups")
+      @Getter
+      @Setter
+      @NoArgsConstructor
+      @ToString(exclude = "usersInGroup")
+      public class Group implements GrantedAuthority {
+          @Id
+          @GeneratedValue(strategy = GenerationType.IDENTITY)
+          private long id;
+          @Enumerated(value = EnumType.STRING)
+          private Role role;
+          @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+          @JoinTable(
+                  name = "group_user",
+                  joinColumns = @JoinColumn(name = "group_id"),
+                  inverseJoinColumns = @JoinColumn(name = "user_id"))
+          private Set<AccountUser> usersInGroup = new LinkedHashSet<>();
+      
+          public Group(Role role) {
+              this.role = role;
+          }
+      
+          @Override
+          public String getAuthority() {
+              return role.name();
+          }
+      
+          public enum Role {
+              ADMINISTRATOR, USER, ACCOUNTANT;
+          }
+      }
+    learner_created: true
+  - name: src/account/group/GroupLoader.java
+    visible: true
+    text: |
+      package account;
+      
+      import org.springframework.stereotype.Component;
+      
+      @Component
+      public class DataLoader {
+          private final GroupRepository groupRepository;
+      
+          public DataLoader(GroupRepository groupRepository) {
+              this.groupRepository = groupRepository;
+      
+              if (!groupRepository.isInitialisedWithRoles())
+                  initialiseRoles();
+          }
+      
+          private void initialiseRoles() {
+              groupRepository.save(new Group(Group.Role.ADMINISTRATOR));
+              groupRepository.save(new Group(Group.Role.ACCOUNTANT));
+              groupRepository.save(new Group(Group.Role.USER));
+          }
+      }
+    learner_created: true
+  - name: src/account/group/GroupRepository.java
+    visible: true
+    text: |
+      package account;
+      
+      import org.springframework.data.repository.CrudRepository;
+      
+      import java.util.List;
+      
+      public interface GroupRepository extends CrudRepository<Group, Long> {
+          Group findGroupByRole(Group.Role role);
+      
+          List<Group> findGroupsByUsersInGroupContains(AccountUser user);
+      
+          default boolean isInitialisedWithRoles() {
+              return getAdminGroup() != null;
+          }
+      
+          default Group getAdminGroup() {
+              return findGroupByRole(Group.Role.ADMINISTRATOR);
+          }
+      
+          default Group getAccountantGroup() {
+              return findGroupByRole(Group.Role.ACCOUNTANT);
+          }
+      
+          default Group getUserGroup() {
+              return findGroupByRole(Group.Role.USER);
+          }
+      }
+    learner_created: true
+  - name: src/account/user/AccountUser.java
+    visible: true
+    text: |
+      package account;
+      
+      import jakarta.persistence.*;
+      import jakarta.validation.constraints.Email;
+      import jakarta.validation.constraints.NotBlank;
+      import jakarta.validation.constraints.NotNull;
+      import lombok.Getter;
+      import lombok.NoArgsConstructor;
+      import lombok.Setter;
+      import lombok.ToString;
+      
+      import java.util.EnumSet;
+      import java.util.LinkedHashSet;
+      import java.util.Set;
+      import java.util.stream.Collectors;
+      
+      @Entity
+      @Table(name = "users")
+      @Getter
+      @Setter
+      @NoArgsConstructor
+      @ToString(exclude = "roles")
+      public class AccountUser {
+          @Id
+          @GeneratedValue(strategy = GenerationType.IDENTITY)
+          private long id;
+          @NotBlank
+          private String name;
+          @NotBlank
+          private String lastname;
+          @NotNull
+          @Email(regexp = "\\w+@acme.com")
+          private String email;
+          @NotNull
+          private String password;
+          @ManyToMany(mappedBy = "usersInGroup", fetch = FetchType.EAGER)
+          private Set<Group> roles = new LinkedHashSet<>();
+      
+          public String[] getRolesAsStrings() {
+              return roles.stream().map(Group::getAuthority).collect(Collectors.joining(",")).split(",");
+          }
+      
+          public String[] getFormattedAndSortedRolesAsStrings() {
+              return roles.stream().map(r -> "ROLE_" + r.getAuthority()).sorted().collect(Collectors.joining(",")).split(",");
+          }
+      
+          public EnumSet<Group.Role> getRolesAsEnumSet() {
+              return EnumSet.copyOf(roles.stream().map(Group::getRole).collect(Collectors.toList()));
+          }
+      }
+    learner_created: true
+  - name: src/account/user/UserRepository.java
+    visible: true
+    text: |
+      package account;
+      
+      import org.springframework.data.domain.Sort;
+      import org.springframework.data.repository.CrudRepository;
+      import org.springframework.data.repository.ListPagingAndSortingRepository;
+      
+      import java.util.List;
+      import java.util.Optional;
+      
+      public interface UserRepository extends ListPagingAndSortingRepository<AccountUser, Long>, CrudRepository<AccountUser, Long> {
+          default List<AccountUser> getAllUsersWithAscendingIds() {
+              return findAll(Sort.by("id"));
+          }
+      
+          Optional<AccountUser> findUserByEmailIgnoreCase(String email);
+      }
+    learner_created: true
+  - name: src/account/security/IncorrectPasswordRecord.java
+    visible: true
+    learner_created: true
+  - name: src/account/security/IncorrectPasswordRecordRepository.java
+    visible: true
+    learner_created: true
 feedback_link: https://hyperskill.org/learn/step/16606#comment
-status: Unchecked
-record: -1
+status: Solved
+feedback:
+  message: Congratulations!
+  time: "Fri, 05 Jan 2024 10:27:02 UTC"
+record: 6

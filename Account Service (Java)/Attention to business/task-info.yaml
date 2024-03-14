@@ -731,6 +731,354 @@ files:
         };
       }
     learner_created: false
+  - name: src/account/exceptions/UserAlreadyExistsException.java
+    visible: true
+    text: |
+      package account.exceptions;
+      
+      public class UserAlreadyExistsException extends RuntimeException {
+      }
+    learner_created: true
+  - name: src/account/exceptions/AccountExceptionHandler.java
+    visible: true
+    text: |
+      package account.exceptions;
+      
+      import account.ErrorMessage;
+      import org.springframework.http.HttpStatus;
+      import org.springframework.http.ResponseEntity;
+      import org.springframework.web.bind.annotation.ControllerAdvice;
+      import org.springframework.web.bind.annotation.ExceptionHandler;
+      import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
+      
+      import java.time.LocalDateTime;
+      
+      @ControllerAdvice
+      public class AccountExceptionHandler extends ResponseEntityExceptionHandler {
+          @ExceptionHandler(UserAlreadyExistsException.class)
+          public ResponseEntity<ErrorMessage> handleUserAlreadyExists() {
+              return ResponseEntity.badRequest().body(new ErrorMessage(LocalDateTime.now(), HttpStatus.BAD_REQUEST, "Bad Request", "User exist!", "/api/auth/signup"));
+          }
+      
+          @ExceptionHandler(PasswordTooShortException.class)
+          public ResponseEntity<ErrorMessage> handlePasswordTooShort(PasswordTooShortException e) {
+              return ResponseEntity.badRequest().body(new ErrorMessage(LocalDateTime.now(), HttpStatus.BAD_REQUEST, "Bad Request", "Password length must be 12 chars minimum!", e.getPath()));
+          }
+      
+          @ExceptionHandler(BreachedPasswordException.class)
+          public ResponseEntity<ErrorMessage> handleBreachedPassword(BreachedPasswordException e) {
+              return ResponseEntity.badRequest().body(new ErrorMessage(LocalDateTime.now(), HttpStatus.BAD_REQUEST, "Bad Request", "The password is in the hacker's database!", e.getPath()));
+          }
+      
+          @ExceptionHandler(SamePasswordException.class)
+          public ResponseEntity<ErrorMessage> handleSamePassword() {
+              return ResponseEntity.badRequest().body(new ErrorMessage(LocalDateTime.now(), HttpStatus.BAD_REQUEST, "Bad Request", "The passwords must be different!", "/api/auth/changepass"));
+          }
+      }
+    learner_created: true
+  - name: src/account/SecurityConfig.java
+    visible: true
+    text: |
+      package account;
+      
+      import org.springframework.context.annotation.Bean;
+      import org.springframework.context.annotation.Configuration;
+      import org.springframework.http.HttpMethod;
+      import org.springframework.security.config.Customizer;
+      import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+      import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+      import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+      import org.springframework.security.crypto.password.PasswordEncoder;
+      import org.springframework.security.web.SecurityFilterChain;
+      
+      
+      @Configuration
+      public class SecurityConfig {
+          @Bean
+          public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+              return http
+                      .httpBasic(Customizer.withDefaults())
+                      .csrf(AbstractHttpConfigurer::disable)
+                      .authorizeHttpRequests(auth -> auth
+                              .requestMatchers(HttpMethod.POST, "/api/auth/signup", "/actuator/shutdown").permitAll()
+                              .anyRequest().authenticated()
+                      ).build();
+          }
+      
+          @Bean
+          public PasswordEncoder passwordEncoder() {
+              return new BCryptPasswordEncoder(13);
+          }
+      }
+    learner_created: true
+  - name: src/account/AccountUserDetailsService.java
+    visible: true
+    text: |
+      package account;
+      
+      import org.springframework.security.core.userdetails.User;
+      import org.springframework.security.core.userdetails.UserDetails;
+      import org.springframework.security.core.userdetails.UserDetailsService;
+      import org.springframework.security.core.userdetails.UsernameNotFoundException;
+      import org.springframework.stereotype.Service;
+      
+      @Service
+      public class AccountUserDetailsService implements UserDetailsService {
+          private final UserRepository repository;
+      
+          public AccountUserDetailsService(UserRepository repository) {
+              this.repository = repository;
+          }
+      
+          @Override
+          public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+              AccountUser user = repository.findUserByEmailIgnoreCase(username).orElseThrow(() -> new UsernameNotFoundException("User not found"));
+              return User.withUsername(user.getEmail()).password(user.getPassword()).roles().build();
+          }
+      }
+    learner_created: true
+  - name: src/account/exceptions/PasswordTooShortException.java
+    visible: true
+    text: |
+      package account.exceptions;
+      
+      import lombok.Getter;
+      
+      @Getter
+      public class PasswordTooShortException extends RuntimeException {
+          private final String path;
+      
+          public PasswordTooShortException(String path) {
+              this.path = path;
+          }
+      }
+    learner_created: true
+  - name: src/account/exceptions/BreachedPasswordException.java
+    visible: true
+    text: |
+      package account.exceptions;
+      
+      import lombok.Getter;
+      
+      @Getter
+      public class BreachedPasswordException extends RuntimeException {
+          private final String path;
+      
+          public BreachedPasswordException(String path) {
+              this.path = path;
+          }
+      }
+    learner_created: true
+  - name: src/account/AccountRestController.java
+    visible: true
+    text: |
+      package account;
+      
+      import account.exceptions.BreachedPasswordException;
+      import account.exceptions.PasswordTooShortException;
+      import account.exceptions.SamePasswordException;
+      import account.exceptions.UserAlreadyExistsException;
+      import jakarta.validation.Valid;
+      import jakarta.validation.constraints.NotNull;
+      import org.springframework.http.ResponseEntity;
+      import org.springframework.security.core.Authentication;
+      import org.springframework.security.crypto.password.PasswordEncoder;
+      import org.springframework.web.bind.annotation.*;
+      
+      @RestController
+      public class AccountRestController {
+          private final UserRepository userRepository;
+          private final PasswordEncoder passwordEncoder;
+      
+          public AccountRestController(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+              this.userRepository = userRepository;
+              this.passwordEncoder = passwordEncoder;
+          }
+      
+          @DeleteMapping("api/auth/clear")
+          public void clearUserDatabase() {
+              userRepository.deleteAll();
+          }
+      
+          @PostMapping("api/auth/signup")
+          public ResponseEntity<SignupResponse> signupUser(@Valid @RequestBody AccountUser user) {
+              if (PasswordUtils.isPasswordTooShort(user.getPassword())) {
+                  throw new PasswordTooShortException("/api/auth/signup");
+              }
+      
+              if (PasswordUtils.isBreachedPassword(user.getPassword())) {
+                  throw new BreachedPasswordException("/api/auth/signup");
+              }
+      
+              if (userRepository.findUserByEmailIgnoreCase(user.getEmail().toLowerCase()).isPresent()) {
+                  throw new UserAlreadyExistsException();
+              }
+      
+              user.setEmail(user.getEmail().toLowerCase());
+              user.setPassword(passwordEncoder.encode(user.getPassword()));
+              user = userRepository.save(user);
+      
+              return ResponseEntity.ok(new SignupResponse(user.getId(), user.getName(), user.getLastname(), user.getEmail()));
+          }
+      
+          @GetMapping("api/empl/payment")
+          public ResponseEntity<SignupResponse> testAuthentication(Authentication auth) {
+              AccountUser user = userRepository.findUserByEmailIgnoreCase(auth.getName()).get();
+              return ResponseEntity.ok(new SignupResponse(user.getId(), user.getName(), user.getLastname(), user.getEmail()));
+          }
+      
+          @PostMapping("api/auth/changepass")
+          public ResponseEntity<UpdatedPasswordResponse> changePassword(@Valid @RequestBody ChangePasswordRequest request, Authentication auth) {
+              if (PasswordUtils.isPasswordTooShort(request.new_password)) {
+                  throw new PasswordTooShortException("/api/auth/changepass");
+              }
+      
+              if (PasswordUtils.isBreachedPassword(request.new_password)) {
+                  throw new BreachedPasswordException("/api/auth/changepass");
+              }
+      
+              if (passwordEncoder.matches(request.new_password, userRepository.findUserByEmailIgnoreCase(auth.getName()).get().getPassword())) {
+                  throw new SamePasswordException();
+              }
+      
+              AccountUser user = userRepository.findUserByEmailIgnoreCase(auth.getName()).get();
+              user.setPassword(passwordEncoder.encode(request.new_password));
+              userRepository.save(user);
+      
+              return ResponseEntity.ok(new UpdatedPasswordResponse(auth.getName(), "The password has been updated successfully"));
+          }
+      
+          public record SignupResponse(long id, String name, String lastname, String email) {
+          }
+      
+          public record ChangePasswordRequest(@NotNull String new_password) {
+          }
+      
+          public record UpdatedPasswordResponse(String email, String status) {
+          }
+      }
+    learner_created: true
+  - name: src/account/exceptions/SamePasswordException.java
+    visible: true
+    text: |
+      package account.exceptions;
+      
+      public class SamePasswordException extends RuntimeException {
+      }
+    learner_created: true
+  - name: src/account/PasswordUtils.java
+    visible: true
+    text: |
+      package account;
+      
+      import java.util.Arrays;
+      
+      public class PasswordUtils {
+          public static boolean isPasswordTooShort(String password) {
+              return Arrays.stream(password.split("")).filter(s -> !s.isBlank()).count() < 12;
+          }
+      
+          public static boolean isBreachedPassword(String password) {
+              return password.matches("PasswordFor((January)|(February)|(March)|(April)|(May)|(June)|(July)|(August)|(September)|(October)|(November)|(December))");
+          }
+      }
+    learner_created: true
+  - name: src/account/AccountUser.java
+    visible: true
+    text: |
+      package account;
+      
+      import jakarta.persistence.*;
+      import jakarta.validation.constraints.Email;
+      import jakarta.validation.constraints.NotBlank;
+      import jakarta.validation.constraints.NotNull;
+      import lombok.Data;
+      
+      @Entity
+      @Table(name = "users")
+      @Data
+      public class AccountUser {
+          @Id
+          @GeneratedValue(strategy = GenerationType.IDENTITY)
+          private long id;
+          @NotBlank
+          private String name;
+          @NotBlank
+          private String lastname;
+          @NotNull
+          @Email(regexp = "\\w+@acme.com")
+          private String email;
+          @NotNull
+          private String password;
+      }
+    learner_created: true
+  - name: src/account/UserRepository.java
+    visible: true
+    text: |
+      package account;
+      
+      import org.springframework.data.repository.CrudRepository;
+      
+      import java.util.Optional;
+      
+      public interface UserRepository extends CrudRepository<AccountUser, Long> {
+          Optional<AccountUser> findUserByEmailIgnoreCase(String email);
+      }
+    learner_created: true
+  - name: src/account/Payroll.java
+    visible: true
+    learner_created: true
+  - name: src/account/PayrollID.java
+    visible: true
+    learner_created: true
+  - name: src/account/PayrollRepository.java
+    visible: true
+    learner_created: true
+  - name: src/account/exceptions/ErrorMessage.java
+    visible: true
+    text: |
+      package account;
+      
+      import lombok.Data;
+      import org.springframework.http.HttpStatus;
+      
+      import java.time.LocalDateTime;
+      
+      @Data
+      public class ErrorMessage {
+          public ErrorMessage(LocalDateTime timestamp, HttpStatus status, String error, String message, String path) {
+              this.timestamp = timestamp;
+              this.status = status.value();
+              this.error = error;
+              this.message = message;
+              this.path = path;
+          }
+      
+          private LocalDateTime timestamp;
+          private int status;
+          private String error;
+          private String message;
+          private String path;
+      }
+    learner_created: true
+  - name: src/account/AccountService.java
+    visible: true
+    learner_created: true
+  - name: src/account/exceptions/NegativeSalaryException.java
+    visible: true
+    learner_created: true
+  - name: src/account/exceptions/PayrollAlreadyExistsException.java
+    visible: true
+    learner_created: true
+  - name: src/account/exceptions/UserDoesNotExistException.java
+    visible: true
+    learner_created: true
+  - name: src/account/exceptions/InvalidPeriodException.java
+    visible: true
+    learner_created: true
 feedback_link: https://hyperskill.org/learn/step/16604#comment
-status: Unchecked
-record: -1
+status: Solved
+feedback:
+  message: Congratulations!
+  time: "Thu, 28 Dec 2023 13:16:05 UTC"
+record: 4

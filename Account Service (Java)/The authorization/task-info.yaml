@@ -952,6 +952,626 @@ files:
       
       }
     learner_created: false
+  - name: src/account/AccountService.java
+    visible: true
+    text: |
+      package account;
+      
+      import account.exceptions.*;
+      import org.springframework.security.crypto.password.PasswordEncoder;
+      import org.springframework.stereotype.Service;
+      import org.springframework.transaction.annotation.Transactional;
+      
+      import java.time.LocalDate;
+      import java.util.List;
+      import java.util.Optional;
+      
+      @Service
+      public class AccountService {
+          private final UserRepository userRepository;
+          private final PayrollRepository payrollRepository;
+          private final PasswordEncoder passwordEncoder;
+      
+          public AccountService(UserRepository userRepository, PayrollRepository payrollRepository, PasswordEncoder passwordEncoder) {
+              this.userRepository = userRepository;
+              this.payrollRepository = payrollRepository;
+              this.passwordEncoder = passwordEncoder;
+          }
+      
+          public AccountUser getUserFromEmail(String email) {
+              return userRepository.findUserByEmailIgnoreCase(email).orElse(null);
+          }
+      
+          public AccountUser addUser(AccountUser user) {
+              if (userRepository.findUserByEmailIgnoreCase(user.getEmail()).isPresent()) {
+                  throw new UserAlreadyExistsException();
+              }
+      
+              user.setEmail(user.getEmail().toLowerCase());
+              user.setPassword(passwordEncoder.encode(user.getPassword()));
+              return userRepository.save(user);
+          }
+      
+          public void changeUserPassword(String email, String newPassword) {
+              AccountUser user = getUserFromEmail(email);
+      
+              if (passwordEncoder.matches(newPassword, user.getPassword())) {
+                  throw new SamePasswordException();
+              }
+      
+              user.setPassword(passwordEncoder.encode(newPassword));
+              userRepository.save(user);
+          }
+      
+          @Transactional
+          public void addPayrolls(List<Payroll> payrolls) {
+              payrolls.forEach(payroll -> {
+                  if (payroll.getSalary() < 0) {
+                      throw new NegativeSalaryException();
+                  }
+      
+                  if (getUserFromEmail(payroll.getEmployee()) == null) {
+                      throw new UserDoesNotExistException();
+                  }
+      
+                  payroll.setEmployee(payroll.getEmployee().toLowerCase());
+                  // Check if days can appear in the payroll period
+      
+                  if (payrollRepository.existsById(new PayrollID(payroll.getEmployee(), payroll.getPeriod()))) {
+                      throw new PayrollAlreadyExistsException();
+                  }
+      
+                  payrollRepository.save(payroll);
+              });
+          }
+      
+          public void updatePayroll(Payroll payroll) {
+              if (payroll.getSalary() < 0) {
+                  throw new NegativeSalaryException();
+              }
+      
+              if (getUserFromEmail(payroll.getEmployee()) == null) {
+                  throw new UserDoesNotExistException();
+              }
+      
+              Payroll updatedPayroll = payrollRepository.findById(new PayrollID(payroll.getEmployee().toLowerCase(), payroll.getPeriod())).get();
+      
+              updatedPayroll.setSalary(payroll.getSalary());
+              payrollRepository.save(updatedPayroll);
+          }
+      
+      
+          public Optional<Payroll> getPayrollForUser(String email, LocalDate period) {
+              return payrollRepository.findById(new PayrollID(email, period));
+          }
+      
+          public List<Payroll> getAllPayrollsForUser(String email) {
+              return payrollRepository.getPayrollsByEmployeeIgnoreCaseOrderByPeriodDesc(email);
+          }
+      }
+    learner_created: true
+  - name: src/account/exceptions/UserAlreadyExistsException.java
+    visible: true
+    text: |
+      package account.exceptions;
+      
+      public class UserAlreadyExistsException extends RuntimeException {
+      }
+    learner_created: true
+  - name: src/account/exceptions/AccountExceptionHandler.java
+    visible: true
+    text: |
+      package account.exceptions;
+      
+      import org.springframework.http.HttpStatus;
+      import org.springframework.http.ResponseEntity;
+      import org.springframework.web.bind.annotation.ControllerAdvice;
+      import org.springframework.web.bind.annotation.ExceptionHandler;
+      import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
+      
+      import java.time.LocalDateTime;
+      
+      @ControllerAdvice
+      public class AccountExceptionHandler extends ResponseEntityExceptionHandler {
+          @ExceptionHandler(UserAlreadyExistsException.class)
+          public ResponseEntity<ErrorMessage> handleUserAlreadyExists() {
+              return ResponseEntity.badRequest().body(new ErrorMessage(LocalDateTime.now(), HttpStatus.BAD_REQUEST, "Bad Request", "User exist!", "/api/auth/signup"));
+          }
+      
+          @ExceptionHandler(PasswordTooShortException.class)
+          public ResponseEntity<ErrorMessage> handlePasswordTooShort(PasswordTooShortException e) {
+              return ResponseEntity.badRequest().body(new ErrorMessage(LocalDateTime.now(), HttpStatus.BAD_REQUEST, "Bad Request", "Password length must be 12 chars minimum!", e.getPath()));
+          }
+      
+          @ExceptionHandler(BreachedPasswordException.class)
+          public ResponseEntity<ErrorMessage> handleBreachedPassword(BreachedPasswordException e) {
+              return ResponseEntity.badRequest().body(new ErrorMessage(LocalDateTime.now(), HttpStatus.BAD_REQUEST, "Bad Request", "The password is in the hacker's database!", e.getPath()));
+          }
+      
+          @ExceptionHandler(SamePasswordException.class)
+          public ResponseEntity<ErrorMessage> handleSamePassword() {
+              return ResponseEntity.badRequest().body(new ErrorMessage(LocalDateTime.now(), HttpStatus.BAD_REQUEST, "Bad Request", "The passwords must be different!", "/api/auth/changepass"));
+          }
+      
+          @ExceptionHandler(NegativeSalaryException.class)
+          public ResponseEntity<ErrorMessage> handleNegativeSalary() {
+              return ResponseEntity.badRequest().body(new ErrorMessage(LocalDateTime.now(), HttpStatus.BAD_REQUEST, "Bad Request", "Salary cannot be negative for a payroll period!", "/api/acct/payments"));
+          }
+      
+          @ExceptionHandler(UserDoesNotExistException.class)
+          public ResponseEntity<ErrorMessage> handleUserDoesNotExist() {
+              return ResponseEntity.badRequest().body(new ErrorMessage(LocalDateTime.now(), HttpStatus.BAD_REQUEST, "Bad Request", "Pay roll user does not exist!", "/api/acct/payments"));
+          }
+      
+          @ExceptionHandler(PayrollAlreadyExistsException.class)
+          public ResponseEntity<ErrorMessage> handlePayrollAlreadyExists() {
+              return ResponseEntity.badRequest().body(new ErrorMessage(LocalDateTime.now(), HttpStatus.BAD_REQUEST, "Bad Request", "Payroll exist!", "/api/acct/payments"));
+          }
+      
+          @ExceptionHandler(InvalidPeriodException.class)
+          public ResponseEntity<ErrorMessage> handleInvalidPeriod() {
+              return ResponseEntity.badRequest().body(new ErrorMessage(LocalDateTime.now(), HttpStatus.BAD_REQUEST, "Bad Request", "Period month is invalid!", "/api/empl/payment"));
+          }
+      }
+    learner_created: true
+  - name: src/account/SecurityConfig.java
+    visible: true
+    text: |
+      package account;
+      
+      import org.springframework.context.annotation.Bean;
+      import org.springframework.context.annotation.Configuration;
+      import org.springframework.http.HttpMethod;
+      import org.springframework.security.config.Customizer;
+      import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+      import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+      import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+      import org.springframework.security.crypto.password.PasswordEncoder;
+      import org.springframework.security.web.SecurityFilterChain;
+      
+      @Configuration
+      public class SecurityConfig {
+          @Bean
+          public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+              return http
+                      .httpBasic(Customizer.withDefaults())
+                      .csrf(AbstractHttpConfigurer::disable)
+                      .authorizeHttpRequests(auth -> auth
+                              .requestMatchers(HttpMethod.POST, "/api/auth/signup", "/actuator/shutdown", "/api/acct/payments").permitAll()
+                              .requestMatchers(HttpMethod.PUT, "/api/acct/payments").permitAll()
+                              .anyRequest().authenticated()
+                      ).build();
+          }
+      
+          @Bean
+          public PasswordEncoder passwordEncoder() {
+              return new BCryptPasswordEncoder(13);
+          }
+      }
+    learner_created: true
+  - name: src/account/exceptions/PayrollAlreadyExistsException.java
+    visible: true
+    text: |
+      package account.exceptions;
+      
+      public class PayrollAlreadyExistsException extends RuntimeException {
+      }
+    learner_created: true
+  - name: src/account/AccountUserDetailsService.java
+    visible: true
+    text: |
+      package account;
+      
+      import org.springframework.security.core.userdetails.User;
+      import org.springframework.security.core.userdetails.UserDetails;
+      import org.springframework.security.core.userdetails.UserDetailsService;
+      import org.springframework.security.core.userdetails.UsernameNotFoundException;
+      import org.springframework.stereotype.Service;
+      
+      @Service
+      public class AccountUserDetailsService implements UserDetailsService {
+          private final UserRepository repository;
+      
+          public AccountUserDetailsService(UserRepository repository) {
+              this.repository = repository;
+          }
+      
+          @Override
+          public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+              AccountUser user = repository.findUserByEmailIgnoreCase(username).orElseThrow(() -> new UsernameNotFoundException("User not found"));
+              return User.withUsername(username).password(user.getPassword()).roles().build();
+          }
+      }
+    learner_created: true
+  - name: src/account/exceptions/PasswordTooShortException.java
+    visible: true
+    text: |
+      package account.exceptions;
+      
+      import lombok.Getter;
+      
+      @Getter
+      public class PasswordTooShortException extends RuntimeException {
+          private final String path;
+      
+          public PasswordTooShortException(String path) {
+              this.path = path;
+          }
+      }
+    learner_created: true
+  - name: src/account/exceptions/ErrorMessage.java
+    visible: true
+    text: |
+      package account.exceptions;
+      
+      import lombok.Data;
+      import org.springframework.http.HttpStatus;
+      
+      import java.time.LocalDateTime;
+      
+      @Data
+      public class ErrorMessage {
+          public ErrorMessage(LocalDateTime timestamp, HttpStatus status, String error, String message, String path) {
+              this.timestamp = timestamp;
+              this.status = status.value();
+              this.error = error;
+              this.message = message;
+              this.path = path;
+          }
+      
+          private LocalDateTime timestamp;
+          private int status;
+          private String error;
+          private String message;
+          private String path;
+      }
+    learner_created: true
+  - name: src/account/exceptions/BreachedPasswordException.java
+    visible: true
+    text: |
+      package account.exceptions;
+      
+      import lombok.Getter;
+      
+      @Getter
+      public class BreachedPasswordException extends RuntimeException {
+          private final String path;
+      
+          public BreachedPasswordException(String path) {
+              this.path = path;
+          }
+      }
+    learner_created: true
+  - name: src/account/AccountRestController.java
+    visible: true
+    text: |
+      package account;
+      
+      import account.exceptions.BreachedPasswordException;
+      import account.exceptions.ErrorMessage;
+      import account.exceptions.InvalidPeriodException;
+      import account.exceptions.PasswordTooShortException;
+      import jakarta.validation.Valid;
+      import jakarta.validation.constraints.NotNull;
+      import org.springframework.http.HttpStatus;
+      import org.springframework.http.ResponseEntity;
+      import org.springframework.http.converter.HttpMessageConversionException;
+      import org.springframework.security.core.Authentication;
+      import org.springframework.web.bind.annotation.*;
+      
+      import java.time.LocalDate;
+      import java.time.LocalDateTime;
+      import java.time.format.TextStyle;
+      import java.util.List;
+      import java.util.Locale;
+      
+      @RestController
+      public class AccountRestController {
+          private final AccountService accountService;
+      
+          public AccountRestController(AccountService accountService) {
+              this.accountService = accountService;
+          }
+      
+          @PostMapping("api/auth/signup")
+          public ResponseEntity<SignupResponse> signupUser(@Valid @RequestBody AccountUser user) {
+              if (PasswordUtils.isPasswordTooShort(user.getPassword())) {
+                  throw new PasswordTooShortException("/api/auth/signup");
+              }
+      
+              if (PasswordUtils.isBreachedPassword(user.getPassword())) {
+                  throw new BreachedPasswordException("/api/auth/signup");
+              }
+      
+              user = accountService.addUser(user);
+      
+              return ResponseEntity.ok(new SignupResponse(user.getId(), user.getName(), user.getLastname(), user.getEmail()));
+          }
+      
+          @PostMapping("api/auth/changepass")
+          public ResponseEntity<UpdatedPasswordResponse> changePassword(@Valid @RequestBody ChangePasswordRequest request, Authentication auth) {
+              if (PasswordUtils.isPasswordTooShort(request.new_password)) {
+                  throw new PasswordTooShortException("/api/auth/changepass");
+              }
+      
+              if (PasswordUtils.isBreachedPassword(request.new_password)) {
+                  throw new BreachedPasswordException("/api/auth/changepass");
+              }
+      
+              accountService.changeUserPassword(auth.getName(), request.new_password);
+      
+              return ResponseEntity.ok(new UpdatedPasswordResponse(auth.getName(), "The password has been updated successfully"));
+          }
+      
+      
+          @PostMapping("api/acct/payments")
+          public ResponseEntity<PayrollStatusResponse> uploadPayrolls(@RequestBody List<Payroll> payrolls) {
+              accountService.addPayrolls(payrolls);
+      
+              return ResponseEntity.ok(new PayrollStatusResponse("Added successfully!"));
+          }
+      
+          @PutMapping("api/acct/payments")
+          public ResponseEntity<PayrollStatusResponse> updatePayroll(@RequestBody Payroll payroll) {
+              accountService.updatePayroll(payroll);
+      
+              return ResponseEntity.ok(new PayrollStatusResponse("Updated successfully!"));
+          }
+      
+          @ExceptionHandler(HttpMessageConversionException.class)
+          public ResponseEntity<ErrorMessage> handleInvalidPeriod(HttpMessageConversionException e) {
+              return ResponseEntity.badRequest().body(new ErrorMessage(LocalDateTime.now(), HttpStatus.BAD_REQUEST, "Bad Request", "Period month is invalid!", "/api/acct/payments"));
+          }
+      
+          public PayrollResponse formatPayrollAsResponse(Payroll payroll) {
+              if (payroll == null) {
+                  return null;
+              }
+              String period = payroll.getPeriod().getMonth().getDisplayName(TextStyle.FULL, Locale.ENGLISH) + "-" + payroll.getPeriod().getYear();
+              long dollars = payroll.getSalary() / 100;
+              long cents = payroll.getSalary() % 100;
+              String salary = dollars + " dollar(s) " + cents + " cent(s)";
+              AccountUser user = accountService.getUserFromEmail(payroll.getEmployee());
+              return new PayrollResponse(user.getName(), user.getLastname(), period, salary);
+          }
+      
+          @GetMapping("api/empl/payment")
+          public ResponseEntity<Object> getPayrolls(@RequestParam(required = false, name = "period") String periodString, Authentication auth) {
+              if (periodString == null) {
+                  return ResponseEntity.ok(accountService.getAllPayrollsForUser(auth.getName()).stream().map(this::formatPayrollAsResponse).toList());
+              } else {
+                  String[] periodParts = periodString.split("-");
+                  int month = Integer.parseInt(periodParts[0]);
+                  int year = Integer.parseInt(periodParts[1]);
+      
+                  if (month < 1 || month > 12) {
+                      throw new InvalidPeriodException();
+                  }
+      
+                  return ResponseEntity.ok(formatPayrollAsResponse(accountService.getPayrollForUser(auth.getName(), LocalDate.of(year, month, 1)).orElse(null)));
+              }
+          }
+      
+          public record SignupResponse(long id, String name, String lastname, String email) {
+          }
+      
+          public record ChangePasswordRequest(@NotNull String new_password) {
+          }
+      
+          public record UpdatedPasswordResponse(String email, String status) {
+          }
+      
+          public record PayrollStatusResponse(String status) {
+          }
+      
+          public record PayrollResponse(String name, String lastname, String period, String salary) {
+          }
+      }
+    learner_created: true
+  - name: src/account/exceptions/InvalidPeriodException.java
+    visible: true
+    text: |
+      package account.exceptions;
+      
+      public class InvalidPeriodException extends RuntimeException {
+      }
+    learner_created: true
+  - name: src/account/exceptions/SamePasswordException.java
+    visible: true
+    text: |
+      package account.exceptions;
+      
+      public class SamePasswordException extends RuntimeException {
+      }
+    learner_created: true
+  - name: src/account/PasswordUtils.java
+    visible: true
+    text: |
+      package account;
+      
+      import java.util.Arrays;
+      
+      public class PasswordUtils {
+          public static boolean isPasswordTooShort(String password) {
+              return Arrays.stream(password.split("")).filter(s -> !s.isBlank()).count() < 12;
+          }
+      
+          public static boolean isBreachedPassword(String password) {
+              return password.matches("PasswordFor((January)|(February)|(March)|(April)|(May)|(June)|(July)|(August)|(September)|(October)|(November)|(December))");
+          }
+      }
+    learner_created: true
+  - name: src/account/exceptions/UserDoesNotExistException.java
+    visible: true
+    text: |
+      package account.exceptions;
+      
+      public class UserDoesNotExistException extends RuntimeException {
+      }
+    learner_created: true
+  - name: src/account/AccountUser.java
+    visible: true
+    text: |
+      package account;
+      
+      import jakarta.persistence.*;
+      import jakarta.validation.constraints.Email;
+      import jakarta.validation.constraints.NotBlank;
+      import jakarta.validation.constraints.NotNull;
+      import lombok.Data;
+      
+      @Entity
+      @Table(name = "users")
+      @Data
+      public class AccountUser {
+          @Id
+          @GeneratedValue(strategy = GenerationType.IDENTITY)
+          private long id;
+          @NotBlank
+          private String name;
+          @NotBlank
+          private String lastname;
+          @NotNull
+          @Email(regexp = "\\w+@acme.com")
+          private String email;
+          @NotNull
+          private String password;
+      }
+    learner_created: true
+  - name: src/account/UserRepository.java
+    visible: true
+    text: |
+      package account;
+      
+      import org.springframework.data.repository.CrudRepository;
+      
+      import java.util.Optional;
+      
+      public interface UserRepository extends CrudRepository<AccountUser, Long> {
+          Optional<AccountUser> findUserByEmailIgnoreCase(String email);
+      }
+    learner_created: true
+  - name: src/account/exceptions/NegativeSalaryException.java
+    visible: true
+    text: |
+      package account.exceptions;
+      
+      public class NegativeSalaryException extends RuntimeException {
+      }
+    learner_created: true
+  - name: src/account/payroll/Payroll.java
+    visible: true
+    text: |
+      package account;
+      
+      import com.fasterxml.jackson.annotation.JsonCreator;
+      import com.fasterxml.jackson.annotation.JsonProperty;
+      import jakarta.persistence.Entity;
+      import jakarta.persistence.Id;
+      import jakarta.persistence.IdClass;
+      import jakarta.persistence.Table;
+      import jakarta.validation.constraints.NotNull;
+      import lombok.AllArgsConstructor;
+      import lombok.Data;
+      import lombok.NoArgsConstructor;
+      
+      import java.time.LocalDate;
+      
+      @Entity
+      @Table(name = "payrolls")
+      @IdClass(PayrollID.class)
+      @Data
+      @AllArgsConstructor
+      @NoArgsConstructor
+      public class Payroll {
+          @Id
+          @NotNull
+          private String employee;
+          @Id
+          @NotNull
+          private LocalDate period;
+          @NotNull
+          private long salary;
+      
+          @JsonCreator
+          public Payroll(@JsonProperty("employee") String employee, @JsonProperty("period") String period, @JsonProperty("salary") long salary) {
+              this.employee = employee;
+              String[] periodParts = period.split("-");
+              int month = Integer.parseInt(periodParts[0]);
+              int year = Integer.parseInt(periodParts[1]);
+              this.period = LocalDate.of(year, month, 1);
+              this.salary = salary;
+          }
+      }
+    learner_created: true
+  - name: src/account/payroll/PayrollID.java
+    visible: true
+    text: |
+      package account;
+      
+      import lombok.AllArgsConstructor;
+      import lombok.Data;
+      import lombok.NoArgsConstructor;
+      
+      import java.io.Serializable;
+      import java.time.LocalDate;
+      
+      @Data
+      @AllArgsConstructor
+      @NoArgsConstructor
+      public class PayrollID implements Serializable {
+          private String employee;
+          private LocalDate period;
+      }
+    learner_created: true
+  - name: src/account/payroll/PayrollRepository.java
+    visible: true
+    text: |
+      package account;
+      
+      import org.springframework.data.repository.CrudRepository;
+      
+      import java.util.List;
+      
+      public interface PayrollRepository extends CrudRepository<Payroll, PayrollID> {
+          List<Payroll> getPayrollsByEmployeeIgnoreCaseOrderByPeriodDesc(String employee);
+      
+          List<Payroll> getAllByEmployee(String employee);
+      }
+    learner_created: true
+  - name: src/account/GroupLoader.java
+    visible: true
+    learner_created: true
+  - name: src/account/Group.java
+    visible: true
+    learner_created: true
+  - name: src/account/GroupRepository.java
+    visible: true
+    learner_created: true
+  - name: src/account/exceptions/UserNotFoundException.java
+    visible: true
+    learner_created: true
+  - name: src/account/exceptions/DeleteAdminException.java
+    visible: true
+    learner_created: true
+  - name: src/account/exceptions/RoleNotFoundException.java
+    visible: true
+    learner_created: true
+  - name: src/account/exceptions/UserDoesNotHaveRoleException.java
+    visible: true
+    learner_created: true
+  - name: src/account/exceptions/DeleteUserOnlyRoleException.java
+    visible: true
+    learner_created: true
+  - name: src/account/exceptions/DeleteAdminRoleException.java
+    visible: true
+    learner_created: true
+  - name: src/account/exceptions/CombineAdminBusinessRoleException.java
+    visible: true
+    learner_created: true
 feedback_link: https://hyperskill.org/learn/step/16605#comment
-status: Unchecked
-record: -1
+status: Solved
+feedback:
+  message: Congratulations!
+  time: "Tue, 02 Jan 2024 06:54:30 UTC"
+record: 5

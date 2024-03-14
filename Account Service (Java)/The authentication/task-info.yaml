@@ -383,6 +383,76 @@ files:
         };
       }
     learner_created: false
+  - name: src/account/AccountRestController.java
+    visible: true
+    text: |
+      package account;
+      
+      import jakarta.validation.Valid;
+      import org.springframework.http.ResponseEntity;
+      import org.springframework.web.bind.annotation.PostMapping;
+      import org.springframework.web.bind.annotation.RequestBody;
+      import org.springframework.web.bind.annotation.RestController;
+      
+      @RestController
+      public class AccountRestController {
+          @PostMapping("/api/auth/signup")
+          public ResponseEntity<SignupResponse> signupUser(@Valid @RequestBody AccountUser user) {
+              return ResponseEntity.ok(new SignupResponse(user.getName(), user.getLastname(), user.getEmail()));
+          }
+      
+          public record SignupResponse(String name, String lastname, String email) {
+          }
+      }
+    learner_created: true
+  - name: src/account/AccountUser.java
+    visible: true
+    text: |
+      package account;
+      
+      import jakarta.validation.constraints.Email;
+      import jakarta.validation.constraints.NotBlank;
+      import jakarta.validation.constraints.NotNull;
+      import lombok.AllArgsConstructor;
+      import lombok.Data;
+      import lombok.NoArgsConstructor;
+      
+      @Data
+      @AllArgsConstructor
+      @NoArgsConstructor
+      public class AccountUser {
+          @NotBlank
+          private String name;
+          @NotBlank
+          private String lastname;
+          @NotNull
+          @Email(regexp = "\\w+@acme.com")
+          private String email;
+          @NotBlank
+          private String password;
+      }
+    learner_created: true
+  - name: src/account/SecurityConfig.java
+    visible: true
+    learner_created: true
+  - name: src/account/UserRepository.java
+    visible: true
+    learner_created: true
+  - name: src/account/AccountUserDetailsService.java
+    visible: true
+    learner_created: true
+  - name: src/account/UserAlreadyExistsException.java
+    visible: true
+    learner_created: true
+  - name: src/account/ErrorMessage.java
+    visible: true
+    learner_created: true
+  - name: src/account/AccountExceptionHandler.java
+    visible: true
+    learner_created: true
 feedback_link: https://hyperskill.org/learn/step/16602#comment
-status: Unchecked
-record: -1
+status: Solved
+feedback:
+  message: Congratulations!
+  time: "Wed, 27 Dec 2023 19:18:37 UTC"
+record: 2
